@@ -1,0 +1,41 @@
+#!/bin/bash
+
+OS=$(/bin/bash /vagrant/shell/os-detect.sh ID)
+CODENAME=$(/bin/bash /vagrant/shell/os-detect.sh CODENAME)
+
+if [[ ! -d /.puphpet-stuff ]]; then
+    mkdir /.puphpet-stuff
+    echo "Created directory /.puphpet-stuff"
+fi
+
+if [[ ! -f /.puphpet-stuff/initial-setup-repo-update ]]; then
+    if [ "$OS" == 'debian' ] || [ "$OS" == 'ubuntu' ]; then
+        echo "Running initial-setup apt-get update"
+        apt-get update >/dev/null
+        apt-get install -y git-core ack-grep vim tmux wget build-essential python-software-properties zip unzip
+        touch /.puphpet-stuff/initial-setup-repo-update
+        echo "Finished running initial-setup apt-get update and upgrade"
+    elif [[ "$OS" == 'centos' ]]; then
+        echo "Running initial-setup yum update"
+        yum update -y >/dev/null
+        echo "Finished running initial-setup yum update"
+
+        echo "Installing basic development tools (CentOS)"
+        yum -y groupinstall "Development Tools" >/dev/null
+        yum -y install zip unzip
+        echo "Finished installing basic development tools (CentOS)"
+        touch /.puphpet-stuff/initial-setup-repo-update
+    fi
+fi
+
+if [[ "$OS" == 'ubuntu' && ("$CODENAME" == 'lucid' || "$CODENAME" == 'precise' ||  "$CODENAME" == 'trusty') && ! -f /.puphpet-stuff/ubuntu-required-libraries ]]; then
+    echo 'Installing basic curl packages (Ubuntu only)'
+    apt-get install -y libcurl3 libcurl4-gnutls-dev >/dev/null
+    echo 'Finished installing basic curl packages (Ubuntu only)'
+
+    touch /.puphpet-stuff/ubuntu-required-libraries
+fi
+
+# Git Config and set Owner - grabbed from github.com/fideloper/Vaprobash/
+curl https://gist.github.com/fideloper/3751524/raw/.gitconfig > /home/vagrant/.gitconfig
+sudo chown vagrant:vagrant /home/vagrant/.gitconfig
